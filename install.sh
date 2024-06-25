@@ -30,6 +30,7 @@ if [ ! -f "$FILE" ]; then
     echo "1) PaperMC"
     echo "2) PurpurMC"
     echo "3) Waterfall"
+    echo "4) FoliaMC"
     read -r platform_choice
     
     echo "Enter the version you want to download (e.g., 1.19.2):"
@@ -47,6 +48,10 @@ if [ ! -f "$FILE" ]; then
         3)
             SERVER_FILE="waterfall-$version.jar"
             DOWNLOAD_URL="https://api.papermc.io/v2/projects/waterfall/versions/$version/builds/latest/downloads/waterfall-$version-latest.jar"
+            ;;
+        4)
+            SERVER_FILE="folia-$version.jar"
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/folia/versions/$version/builds/latest/downloads/folia-$version-latest.jar"
             ;;
         *)
             echo "Invalid option"
