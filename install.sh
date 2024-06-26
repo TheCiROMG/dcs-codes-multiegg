@@ -7,8 +7,25 @@ function display {
     echo "========================================================================="
 }
 
+function install_jq {
+    if ! command -v jq &> /dev/null; then
+        echo "jq is not installed. Installing jq..."
+        if [ -x "$(command -v apt-get)" ]; then
+            sudo apt-get update && sudo apt-get install -y jq
+        elif [ -x "$(command -v yum)" ]; then
+            sudo yum install -y jq
+        elif [ -x "$(command -v brew)" ]; then
+            brew install jq
+        else
+            echo "Package manager not found. Please install jq manually."
+            exit 1
+        fi
+    else
+        echo "jq is already installed."
+    fi
+}
+
 function forceStuffs {
-    curl -O https://cdn.discordapp.com/attachments/946264593746001960/969858011357151252/FE_1.png
     echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> server.properties
 }
 
@@ -22,14 +39,15 @@ function optimizeJavaServer {
     echo "view-distance=6" >> server.properties
 }
 
+install_jq
+
 if [ ! -f "$FILE" ]; then
-    mkdir -p plugins
     display
     sleep 5
     echo "Which platform are you gonna use?"
     echo "1) PaperMC"
     echo "2) PurpurMC"
-    echo "3) Waterfall"
+    echo "3) Velocity"
     echo "4) FoliaMC"
     read -r platform_choice
     
@@ -38,20 +56,28 @@ if [ ! -f "$FILE" ]; then
 
     case $platform_choice in
         1)
-            SERVER_FILE="paper-$version.jar"
-            DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/$version/builds/latest/downloads/paper-$version-latest.jar"
+            # Obtener el último build para la versión especificada
+            BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/$version" | jq -r '.builds[-1]')
+            SERVER_FILE="paper-$version-$BUILD.jar"
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/$version/builds/$BUILD/downloads/paper-$version-$BUILD.jar"
             ;;
         2)
-            SERVER_FILE="purpur-$version.jar"
-            DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/$version/latest/download"
+            # Obtener el último build para la versión especificada
+            BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/$version" | jq -r '.builds[-1]')
+            SERVER_FILE="purpur-$version-$BUILD.jar"
+            DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/$version/builds/$BUILD/downloads/purpur-$version-$BUILD.jar"
             ;;
         3)
-            SERVER_FILE="waterfall-$version.jar"
-            DOWNLOAD_URL="https://api.papermc.io/v2/projects/waterfall/versions/$version/builds/latest/downloads/waterfall-$version-latest.jar"
+            # Obtener el último build para la versión especificada
+            BUILD=$(curl -s "https://api.papermc.io/v2/projects/velocity/versions/$version" | jq -r '.builds[-1]')
+            SERVER_FILE="velocity-$version-$BUILD.jar"
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/velocity/versions/$version/builds/$BUILD/downloads/velocity-$version-$BUILD.jar"
             ;;
         4)
-            SERVER_FILE="folia-$version.jar"
-            DOWNLOAD_URL="https://api.papermc.io/v2/projects/folia/versions/$version/builds/latest/downloads/folia-$version-latest.jar"
+            # Obtener el último build para la versión especificada
+            BUILD=$(curl -s "https://api.papermc.io/v2/projects/folia/versions/$version" | jq -r '.builds[-1]')
+            SERVER_FILE="folia-$version-$BUILD.jar"
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/folia/versions/$version/builds/$BUILD/downloads/folia-$version-$BUILD.jar"
             ;;
         *)
             echo "Invalid option"
@@ -59,11 +85,27 @@ if [ ! -f "$FILE" ]; then
             ;;
     esac
 
-    sleep 1
-    echo "Starting the download for $platform_choice $version, please wait"
+    echo "Download in progress, please wait..."
     sleep 4
     forceStuffs
-    curl -O $DOWNLOAD_URL
+
+    # Descargar el archivo y guardarlo con el nombre correcto
+    curl -L $DOWNLOAD_URL -o download_temp.jar
+    if [ $? -ne 0 ]; then
+        echo "Download failed. Please check the URL and your internet connection."
+        exit 1
+    fi
+
+    # Renombrar el archivo descargado
+    mv download_temp.jar $SERVER_FILE
+
+    # Verificar el nombre del archivo descargado
+    if [ ! -f "$SERVER_FILE" ]; then
+        echo "Error: The downloaded file does not match the expected name $SERVER_FILE."
+        ls -l
+        exit 1
+    fi
+
     display
     echo "Download complete"
     sleep 10
@@ -71,14 +113,6 @@ if [ ! -f "$FILE" ]; then
     optimizeJavaServer
     launchJavaServer
 else
-    if [ -f plugins ]; then
-        mkdir plugins
-    fi
-    if [ -f BungeeCord.jar ]; then
-        display
-        java -Xms512M -Xmx512M -jar BungeeCord.jar
-    else
-        display
-        launchJavaServer
-    fi
+    display
+    launchJavaServer
 fi
