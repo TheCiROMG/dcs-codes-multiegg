@@ -1,7 +1,8 @@
 #!/bin/bash
 
 CONFIG_FILE="server_config.cfg"
-SCRIPT_FILE="install_pterodactyl"  # Nombre del script actual
+SCRIPT_FILE="install_script.sh"  # Nombre del script actual
+TEMP_CONFIG_FILE="temp_config.cfg"
 
 function display {
     echo -e "\033c"
@@ -42,10 +43,14 @@ function downloadServer {
     echo "3) Velocity"
     echo "4) FoliaMC"
     read -r platform_choice
+    echo "platform_choice=$platform_choice" > $TEMP_CONFIG_FILE
     
     display
     echo "Enter the version you want to download (e.g., 1.19.2 or latest):"
     read -r version
+    echo "version=$version" >> $TEMP_CONFIG_FILE
+
+    source $TEMP_CONFIG_FILE
 
     case $platform_choice in
         1)
@@ -180,6 +185,7 @@ fi
 
 # Eliminar el script después de completar la configuración
 rm -- "$SCRIPT_FILE"
+rm -- "$TEMP_CONFIG_FILE"
 
 # Salir con un código de éxito
 exit 0
