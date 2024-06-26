@@ -46,7 +46,13 @@ function createEula {
 # Función para convertir la marca de tiempo a una fecha legible
 function convertDate {
     local timestamp=$1
-    date -d "$timestamp" +"%Y-%m-%d %H:%M:%S"
+    if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
+        # Si el timestamp es un número, se asume que es epoch time en milisegundos
+        date -d @$((timestamp / 1000)) +"%Y-%m-%d %H:%M:%S"
+    else
+        # Si el timestamp no es un número, se asume que es una fecha ISO 8601
+        date -d "$(echo "$timestamp" | sed 's/\.[0-9]*Z//')" +"%Y-%m-%d %H:%M:%S"
+    fi
 }
 
 # Función para comparar versiones y fechas
@@ -73,7 +79,7 @@ function compareVersions {
         if [ "$new_date" \> "$earlier_date" ]; then
             echo "You are downloading a newer version of Minecraft."
         else
-            echo "You are downloading an older version of Minecraft."
+            echo "You are downloading una older version of Minecraft."
         fi
     fi
 }
@@ -111,6 +117,7 @@ function downloadServer {
             BUILD="latest"
             DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/$version/latest/download"
             BUILD_TIMESTAMP=$(curl -s "https://api.purpurmc.org/v2/purpur/$version/latest" | jq -r '.timestamp')
+            # Convertir la marca de tiempo de PurpurMC a una fecha legible
             BUILD_DATE=$(convertDate "$BUILD_TIMESTAMP")
             ;;
         3)
