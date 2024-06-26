@@ -2,7 +2,6 @@
 
 CONFIG_FILE="server_config.cfg"
 SCRIPT_FILE="install_script.sh"  # Nombre del script actual
-TEMP_CONFIG_FILE="temp_config.cfg"
 
 function display {
     echo -e "\033c"
@@ -36,21 +35,8 @@ function optimizeJavaServer {
 }
 
 function downloadServer {
-    display
-    echo "Which platform are you gonna use?"
-    echo "1) PaperMC"
-    echo "2) PurpurMC"
-    echo "3) Velocity"
-    echo "4) FoliaMC"
-    read -r platform_choice
-    echo "platform_choice=$platform_choice" > $TEMP_CONFIG_FILE
-    
-    display
-    echo "Enter the version you want to download (e.g., 1.19.2 or latest):"
-    read -r version
-    echo "version=$version" >> $TEMP_CONFIG_FILE
-
-    source $TEMP_CONFIG_FILE
+    platform_choice="${PLATFORM_CHOICE:-1}"
+    version="${VERSION:-latest}"
 
     case $platform_choice in
         1)
@@ -102,12 +88,7 @@ function downloadServer {
 
     if [ -f "$SERVER_FILE" ]; then
         display
-        echo "File $SERVER_FILE already exists. Do you want to overwrite it? (yes/no)"
-        read -r overwrite_choice
-        if [ "$overwrite_choice" != "yes" ]; then
-            echo "Download cancelled."
-            exit 0
-        fi
+        echo "File $SERVER_FILE already exists. Overwriting..."
     fi
 
     display
@@ -126,14 +107,14 @@ function downloadServer {
     mv download_temp.jar "$SERVER_FILE"
 
     # Verificar el nombre del archivo descargado
-    if [ ! -f "$SERVER_FILE" ]; then
+    if [ ! -f "$SERVER_FILE" ];then
         echo "Error: The downloaded file does not match the expected name $SERVER_FILE."
         ls -l
         exit 1
     fi
 
     # Leer la versión anterior si existe
-    if [ -f "$CONFIG_FILE" ]; then
+    if [ -f "$CONFIG_FILE" ];then
         EARLIER_VERSION=$(grep "version:" "$CONFIG_FILE" | cut -d' ' -f2)
         EARLIER_BUILD=$(grep "build:" "$CONFIG_FILE" | cut -d' ' -f2)
     else
@@ -157,35 +138,26 @@ function downloadServer {
 
 install_dependencies
 
-if [ ! -f "eula.txt" ]; then
+if [ ! -f "eula.txt" ];then
     display
     downloadServer
 else
     display
     echo "eula.txt found. Skipping download."
-    display
-    echo "Would you like to re-download the server file? (yes/no)"
-    read -r redownload_choice
-    if [ "$redownload_choice" = "yes" ]; then
-        display
-        downloadServer
-    else
-        if [ -f "$CONFIG_FILE" ]; then
-            SERVER_FILE=$(grep "file:" "$CONFIG_FILE" | cut -d' ' -f2)
-            if [ ! -f "$SERVER_FILE" ]; then
-                echo "Error: The specified file does not exist."
-                exit 1
-            fi
-        else
-            echo "Configuration file not found. Please run the setup first."
+    if [ -f "$CONFIG_FILE" ];then
+        SERVER_FILE=$(grep "file:" "$CONFIG_FILE" | cut -d' ' -f2)
+        if [ ! -f "$SERVER_FILE" ];then
+            echo "Error: The specified file does not exist."
             exit 1
         fi
+    else
+        echo "Configuration file not found. Please run the setup first."
+        exit 1
     fi
 fi
 
 # Eliminar el script después de completar la configuración
 rm -- "$SCRIPT_FILE"
-rm -- "$TEMP_CONFIG_FILE"
 
 # Salir con un código de éxito
 exit 0
