@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONFIG_FILE="server_config.cfg"
-SCRIPT_FILE="install_script.sh"  # Nombre del script actual
+SCRIPT_FILE="install_pterodactyl"  # Nombre del script actual
 
 function display {
     echo -e "\033c"
