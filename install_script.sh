@@ -32,17 +32,6 @@ function forceStuffs {
     echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> server.properties
 }
 
-function launchJavaServer {
-    if [ -f "$CONFIG_FILE" ]; then
-        SERVER_FILE="server.jar"
-        echo "Launching server with JAR file: $SERVER_FILE"
-        java -Xms128M -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -Dusing.aikars.flags=https://mcflags.emc.gs -Daikars.new.flags=true -jar "$SERVER_FILE" nogui
-    else
-        echo "Error: Configuration file not found. Please run the setup first."
-        exit 1
-    fi
-}
-
 function optimizeJavaServer {
     echo "view-distance=6" >> server.properties
 }
@@ -60,6 +49,7 @@ function downloadServer {
 
     case $platform_choice in
         1)
+            fork_name="PaperMC"
             if [ "$version" = "latest" ]; then
                 version=$(curl -s "https://api.papermc.io/v2/projects/paper" | jq -r '.versions[-1]')
             fi
@@ -68,6 +58,7 @@ function downloadServer {
             DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/$version/builds/$BUILD/downloads/paper-$version-$BUILD.jar"
             ;;
         2)
+            fork_name="PurpurMC"
             if [ "$version" = "latest" ]; then
                 version=$(curl -s "https://api.purpurmc.org/v2/purpur" | jq -r '.versions[-1]')
             fi
@@ -76,6 +67,7 @@ function downloadServer {
             DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/$version/latest/download"
             ;;
         3)
+            fork_name="Velocity"
             if [ "$version" = "latest" ]; then
                 version=$(curl -s "https://api.papermc.io/v2/projects/velocity" | jq -r '.versions[-1]')
             fi
@@ -84,6 +76,7 @@ function downloadServer {
             DOWNLOAD_URL="https://api.papermc.io/v2/projects/velocity/versions/$version/builds/$BUILD/downloads/velocity-$version-$BUILD.jar"
             ;;
         4)
+            fork_name="FoliaMC"
             if [ "$version" = "latest" ]; then
                 version=$(curl -s "https://api.papermc.io/v2/projects/folia" | jq -r '.versions[-1]')
             fi
@@ -96,6 +89,10 @@ function downloadServer {
             exit 1
             ;;
     esac
+
+    echo "Selected platform: $fork_name"
+    echo "Version: $version"
+    echo "Build: $BUILD"
 
     if [ -f "$SERVER_FILE" ]; then
         echo "File $SERVER_FILE already exists. Do you want to overwrite it? (yes/no)"
@@ -176,8 +173,8 @@ else
     fi
 fi
 
-display
-launchJavaServer
+# Eliminar el script después de completar la configuración
+#rm -- "$SCRIPT_FILE"
 
-# Eliminar el script después de iniciar el servidor
-rm -- "$SCRIPT_FILE"
+# Salir con un código de éxito
+exit 0
