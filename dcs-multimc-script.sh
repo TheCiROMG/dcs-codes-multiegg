@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONFIG_FILE="server_config.cfg"
-SCRIPT_FILE="install_script.sh"  # Nombre del script actual
+SCRIPT_FILE="dcs-multimc-script.sh"  # Nombre del script actual
 
 # Función para mostrar el banner
 function display {
@@ -29,28 +29,30 @@ function install_dependencies {
 }
 
 # Función para forzar configuraciones en server.properties
+# Función para forzar configuraciones en server.properties
 function forceStuffs {
-    echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> server.properties
-}
-
-# Función para optimizar el servidor Java
-function optimizeJavaServer {
-    echo "view-distance=6" >> server.properties
+    if ! grep -q "^motd=" /mnt/server/server.properties; then
+        echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> /mnt/server/server.properties
+        echo "Notice: The server.properties file has been modified. Changes will be applied."
+        sleep 3
+    else
+        echo "motd already set. Skipping modification."
+        sleep 2
+    fi
 }
 
 # Función para crear el archivo eula.txt
 function createEula {
-    echo "eula=true" > eula.txt
+    echo "eula=true" > /mnt/server/eula.txt
 }
 
 # Función para convertir la marca de tiempo a una fecha legible
 function convertDate {
     local timestamp=$1
-    if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
-        # Si el timestamp es un número, se asume que es epoch time en milisegundos
+    local format=$2
+    if [ "$format" == "epoch" ]; then
         date -d @$((timestamp / 1000)) +"%Y-%m-%d %H:%M:%S"
     else
-        # Si el timestamp no es un número, se asume que es una fecha ISO 8601
         date -d "$(echo "$timestamp" | sed 's/\.[0-9]*Z//')" +"%Y-%m-%d %H:%M:%S"
     fi
 }
@@ -66,20 +68,26 @@ function compareVersions {
 
     if [ "$new_version" = "$earlier_version" ]; then
         echo "You are downloading the same version of Minecraft."
+        sleep 3
         if [ "$new_build" = "$earlier_build" ]; then
             echo "You are downloading the same build."
+            sleep 3
         else
             if [ "$new_date" \> "$earlier_date" ]; then
                 echo "You are downloading a newer build of the same version."
+                sleep 3
             else
                 echo "You are downloading an older build of the same version."
+                sleep 3
             fi
         fi
     else
         if [ "$new_date" \> "$earlier_date" ]; then
             echo "You are downloading a newer version of Minecraft."
+            sleep 3
         else
-            echo "You are downloading una older version of Minecraft."
+            echo "You are downloading an older version of Minecraft."
+            sleep 3
         fi
     fi
 }
@@ -154,19 +162,24 @@ function downloadServer {
     echo "Build Date: $BUILD_DATE"
 
     if [ -f "$SERVER_FILE" ]; then
-        echo "File $SERVER_FILE already exists. Do you want to overwrite it? (yes/no)"
-        read -r overwrite_choice
-        if [ "$overwrite_choice" != "yes" ]; then
-            echo "Download cancelled."
-            exit 0
-        fi
+        display
+        echo "File $SERVER_FILE already exists. Renaming to oldserver.jar..."
+        mv "$SERVER_FILE" /mnt/server/oldserver.jar
+        sleep 3
     fi
 
-    if [ -f "$CONFIG_FILE" ]; then
+    if [ -f "$CONFIG_FILE" ];then
         EARLIER_VERSION=$(grep "version:" "$CONFIG_FILE" | cut -d' ' -f2)
         EARLIER_BUILD=$(grep "build:" "$CONFIG_FILE" | cut -d' ' -f2)
         EARLIER_DATE=$(grep "date:" "$CONFIG_FILE" | cut -d' ' -f2)
         compareVersions "$version" "$BUILD" "$BUILD_DATE" "$EARLIER_VERSION" "$EARLIER_BUILD" "$EARLIER_DATE"
+        
+        # Guardar datos de la versión anterior en el archivo de configuración
+        echo "---" >> "$CONFIG_FILE"
+        echo "old_file: /mnt/server/oldserver.jar" >> "$CONFIG_FILE"
+        echo "old_version: $EARLIER_VERSION" >> "$CONFIG_FILE"
+        echo "old_build: $EARLIER_BUILD" >> "$CONFIG_FILE"
+        echo "old_date: $EARLIER_DATE" >> "$CONFIG_FILE"
     fi
 
     echo "Download in progress, please wait..."
