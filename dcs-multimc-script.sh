@@ -31,8 +31,8 @@ function install_dependencies {
 # Función para forzar configuraciones en server.properties
 # Función para forzar configuraciones en server.properties
 function forceStuffs {
-    if ! grep -q "^motd=" /mnt/server/server.properties; then
-        echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> /mnt/server/server.properties
+    if ! grep -q "^motd=" server.properties; then
+        echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> server.properties
         echo "Notice: The server.properties file has been modified. Changes will be applied."
         sleep 3
     else
@@ -43,7 +43,7 @@ function forceStuffs {
 
 # Función para crear el archivo eula.txt
 function createEula {
-    echo "eula=true" > /mnt/server/eula.txt
+    echo "eula=true" > eula.txt
 }
 
 # Función para convertir la marca de tiempo a una fecha legible
@@ -164,7 +164,7 @@ function downloadServer {
     if [ -f "$SERVER_FILE" ]; then
         display
         echo "File $SERVER_FILE already exists. Renaming to oldserver.jar..."
-        mv "$SERVER_FILE" /mnt/server/oldserver.jar
+        mv "$SERVER_FILE" oldserver.jar
         sleep 3
     fi
 
@@ -176,7 +176,7 @@ function downloadServer {
         
         # Guardar datos de la versión anterior en el archivo de configuración
         echo "---" >> "$CONFIG_FILE"
-        echo "old_file: /mnt/server/oldserver.jar" >> "$CONFIG_FILE"
+        echo "old_file: oldserver.jar" >> "$CONFIG_FILE"
         echo "old_version: $EARLIER_VERSION" >> "$CONFIG_FILE"
         echo "old_build: $EARLIER_BUILD" >> "$CONFIG_FILE"
         echo "old_date: $EARLIER_DATE" >> "$CONFIG_FILE"
