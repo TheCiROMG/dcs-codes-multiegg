@@ -1,0 +1,206 @@
+#!/bin/bash
+
+CONFIG_FILE="/mnt/server/server_config.cfg"  # Definir la ruta del archivo de configuración
+
+# Función para mostrar el banner
+function display {
+    echo -e "\033c"  # Limpiar la pantalla
+    echo "========================================================================="
+    echo "                  DSC Codes Minecraft Server Installer                   "
+    echo "========================================================================="
+}
+
+# Función para instalar dependencias
+function install_dependencies {
+    if ! command -v curl &> /dev/null; then  # Verificar si curl no está instalado
+        echo "curl no está instalado. Instalando curl..."
+        apt update && apt install -y curl || exit 0  # Instalar curl usando apt
+    else
+        echo "curl ya está instalado."
+    fi
+
+    if ! command -v jq &> /dev/null; then  # Verificar si jq no está instalado
+        echo "jq no está instalado. Instalando jq..."
+        apt install -y jq || exit 0  # Instalar jq usando apt
+    else
+        echo "jq ya está instalado."
+    fi
+}
+
+# Función para forzar configuraciones en server.properties
+function forceStuffs {
+    if ! grep -q "^motd=" /mnt/server/server.properties; then  # Verificar si no existe "motd=" en server.properties
+        echo "motd=Powered by DCS Codes | Change this motd in server.properties" >> /mnt/server/server.properties  # Añadir motd
+        echo "Aviso: El archivo server.properties ha sido modificado. Los cambios se aplicarán."
+        sleep 3
+    else
+        echo "motd ya está configurado. Omitiendo modificación."
+        sleep 2
+    fi
+}
+
+# Función para crear el archivo eula.txt
+function createEula {
+    echo "eula=true" > /mnt/server/eula.txt  # Crear eula.txt con el contenido "eula=true"
+}
+
+# Función para convertir la marca de tiempo a una fecha legible
+function convertDate {
+    local timestamp=$1
+    local format=$2
+    if [ "$format" == "epoch" ]; then
+        # Si el timestamp es un número, se asume que es epoch time en milisegundos
+        date -d @$((timestamp / 1000)) +"%Y-%m-%d %H:%M:%S"
+    else
+        # Si el timestamp no es un número, se asume que es una fecha ISO 8601/RFC 3339
+        date -d "$(echo "$timestamp" | sed 's/\.[0-9]*Z//')" +"%Y-%m-%d %H:%M:%S"
+    fi
+}
+
+# Función para comparar versiones y fechas
+function compareVersions {
+    local new_version=$1
+    local new_build=$2
+    local new_date=$3
+    local earlier_version=$4
+    local earlier_build=$5
+    local earlier_date=$6
+
+    if [ "$new_version" = "$earlier_version" ]; then
+        echo "Estás descargando la misma versión de Minecraft."
+        sleep 3
+        if [ "$new_build" = "$earlier_build" ]; then
+            echo "Estás descargando el mismo build."
+            sleep 3
+        else
+            if [ "$new_date" \> "$earlier_date" ]; then
+                echo "Estás descargando un build más nuevo de la misma versión."
+                sleep 3
+            else
+                echo "Estás descargando un build más antiguo de la misma versión."
+                sleep 3
+            fi
+        fi
+    else
+        if [ "$new_date" \> "$earlier_date" ]; then
+            echo "Estás descargando una versión más nueva de Minecraft."
+            sleep 3
+        else
+            echo "Estás descargando una versión más antigua de Minecraft."
+            sleep 3
+        fi
+    fi
+}
+
+# Función para descargar el servidor
+function downloadServer {
+    platform_choice="${PLATFORM_CHOICE:-1}"  # Elegir la plataforma (1: PaperMC, 2: PurpurMC, 3: FoliaMC)
+    version="${VERSION:-latest}"  # Elegir la versión (por defecto es "latest")
+
+    case $platform_choice in
+        PaperMC)
+            fork_name="PaperMC"
+            if [ "$version" = "latest" ];then
+                version=$(curl -s "https://api.papermc.io/v2/projects/paper" | jq -r '.versions[-1]')  # Obtener la última versión
+            fi
+            BUILD=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/$version" | jq -r '.builds[-1]')  # Obtener el último build
+            SERVER_FILE="/mnt/server/server.jar"  # Definir el archivo del servidor
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/paper/versions/$version/builds/$BUILD/downloads/paper-$version-$BUILD.jar"  # Definir la URL de descarga
+            BUILD_TIMESTAMP=$(curl -s "https://api.papermc.io/v2/projects/paper/versions/$version/builds/$BUILD" | jq -r '.time')  # Obtener la marca de tiempo del build
+            BUILD_DATE=$(convertDate "$BUILD_TIMESTAMP" "rfc3339")  # Convertir la marca de tiempo a una fecha legible
+            ;;
+        PurpurMC)
+            fork_name="PurpurMC"
+            if [ "$version" = "latest" ];then
+                version=$(curl -s "https://api.purpurmc.org/v2/purpur" | jq -r '.versions[-1]')  # Obtener la última versión
+            fi
+            SERVER_FILE="/mnt/server/server.jar"  # Definir el archivo del servidor
+            BUILD=$(curl -s "https://api.purpurmc.org/v2/purpur/$version/latest" | jq -r '.build')  # Obtener el último build
+            DOWNLOAD_URL="https://api.purpurmc.org/v2/purpur/$version/latest/download"  # Definir la URL de descarga
+            BUILD_TIMESTAMP=$(curl -s "https://api.purpurmc.org/v2/purpur/$version/latest" | jq -r '.timestamp')  # Obtener la marca de tiempo del build
+            BUILD_DATE=$(convertDate "$BUILD_TIMESTAMP" "epoch")  # Convertir la marca de tiempo a una fecha legible
+            ;;
+        FoliaMC)
+            fork_name="FoliaMC"
+            if [ "$version" = "latest" ];then
+                version=$(curl -s "https://api.papermc.io/v2/projects/folia" | jq -r '.versions[-1]')  # Obtener la última versión
+            fi
+            BUILD=$(curl -s "https://api.papermc.io/v2/projects/folia/versions/$version" | jq -r '.builds[-1]')  # Obtener el último build
+            SERVER_FILE="/mnt/server/server.jar"  # Definir el archivo del servidor
+            DOWNLOAD_URL="https://api.papermc.io/v2/projects/folia/versions/$version/builds/$BUILD/downloads/folia-$version-$BUILD.jar"  # Definir la URL de descarga
+            BUILD_TIMESTAMP=$(curl -s "https://api.papermc.io/v2/projects/folia/versions/$version/builds/$BUILD" | jq -r '.time')  # Obtener la marca de tiempo del build
+            BUILD_DATE=$(convertDate "$BUILD_TIMESTAMP" "rfc3339")  # Convertir la marca de tiempo a una fecha legible
+            ;;
+        *)
+            echo "Opción inválida"
+            sleep 3
+            exit 1
+            ;;
+    esac
+
+    display
+    echo "Plataforma seleccionada: $fork_name"
+    echo "Versión: $version"
+    echo "Build: $BUILD"
+    echo "Fecha del build: $BUILD_DATE"
+    sleep 3
+
+    if [ -f "$SERVER_FILE" ]; then
+        display
+        echo "El archivo $SERVER_FILE ya existe. Renombrándolo a oldserver.jar..."
+        mv "$SERVER_FILE" "/mnt/server/oldserver.jar"  # Renombrar el archivo existente a oldserver.jar
+        sleep 3
+    fi
+
+    if [ -f "$CONFIG_FILE" ]; then
+        # Guardar datos de la versión anterior
+        echo "--- Detalles de la versión anterior el $(date +'%Y-%m-%d %H:%M:%S') ---" >> "$CONFIG_FILE"
+        grep -E "fork:|version:|build:|date:" "$CONFIG_FILE" >> "$CONFIG_FILE"  # Agregar los detalles de la versión anterior al archivo de configuración
+    fi
+
+    display
+    echo "Descarga en progreso, por favor espera..."
+    sleep 2
+    forceStuffs
+
+    # Descargar el archivo y guardarlo con el nombre correcto
+    curl -L "$DOWNLOAD_URL" -o /mnt/server/download_temp.jar || exit 0
+
+    # Renombrar el archivo descargado a server.jar
+    mv /mnt/server/download_temp.jar "$SERVER_FILE"
+
+    # Verificar el nombre del archivo descargado
+    if [ ! -f "$SERVER_FILE" ]; then
+        echo "Error: El archivo descargado no coincide con el nombre esperado $SERVER_FILE."
+        ls -l /mnt/server
+        exit 1
+    fi
+
+    # Guardar datos de la nueva versión
+    echo "+++ Detalles de la nueva versión descargada el $(date +'%Y-%m-%d %H:%M:%S') +++" >> "$CONFIG_FILE"
+    echo "fork: $fork_name" >> "$CONFIG_FILE"
+    echo "version: $version" >> "$CONFIG_FILE"
+    echo "build: $BUILD" >> "$CONFIG_FILE"
+    echo "date: $BUILD_DATE" >> "$CONFIG_FILE"
+
+    display
+    echo "Descarga completa"
+    sleep 3
+    echo -e ""
+}
+
+install_dependencies
+
+if [ ! -f "/mnt/server/eula.txt" ]; then
+    display
+    createEula
+    downloadServer
+else
+    display
+    echo "eula.txt encontrado. Omitiendo descarga."
+    sleep 2
+    downloadServer
+fi
+
+# Salir con un código de éxito
+exit 0
