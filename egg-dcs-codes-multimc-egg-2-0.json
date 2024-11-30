@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2024-11-29T12:46:14-03:00",
+    "exported_at": "2024-11-30T16:27:33-03:00",
     "name": "DCS Codes MultiMC 2.0",
     "author": "ciroandresb@hotmail.com.ar",
     "description": "Simple DCS Codes Multi MC Egg for PaperMC, FoliaMC, PurpurMC, Waterfall, Fabric, Forge and MohistMC",
@@ -59,12 +59,12 @@
         },
         {
             "name": "Platform Choice",
-            "description": "Install : PaperMC, PurpurMC, Pufferfish, FoliaMC, Waterfall, Velocity, Fabric, Forge and MohistMC",
+            "description": "Install : PaperMC, PurpurMC, Pufferfish, FoliaMC, Waterfall, Velocity, Fabric, Forge, MohistMC and BannerMC",
             "env_variable": "PLATFORM_CHOICE",
             "default_value": "PurpurMC",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "nullable|string|max:999|in:PaperMC,PurpurMC,Pufferfish,FoliaMC,Waterfall,Velocity,Fabric,Forge,MohistMC",
+            "rules": "nullable|string|max:999|in:PaperMC,PurpurMC,Pufferfish,FoliaMC,Waterfall,Velocity,Fabric,Forge,MohistMC,BannerMC",
             "field_type": "text"
         }
     ]
