@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2024-11-30T18:51:36-03:00",
+    "exported_at": "2024-11-30T18:54:12-03:00",
     "name": "DCS Codes MultiMC 2.0",
     "author": "ciroandresb@hotmail.com.ar",
     "description": "Simple DCS Codes Multi MC Egg for PaperMC, FoliaMC, PurpurMC, Waterfall, Fabric, Forge and MohistMC",
@@ -69,7 +69,7 @@
         },
         {
             "name": "No Premium - Premium",
-            "description": "Change the server status from \u201cPremium\u201d to \u201cNon Premium\u201d and vice versa.",
+            "description": "Change the server status from \u201cNon Premium\u201d to \u201cPremium\u201d and vice versa.",
             "env_variable": "ONLINE_MODE",
             "default_value": "false",
             "user_viewable": true,
